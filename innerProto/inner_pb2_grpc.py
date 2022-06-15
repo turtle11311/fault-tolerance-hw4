@@ -24,6 +24,16 @@ class eVotingReplicaStub(object):
                 request_serializer=inner__pb2.Vote.SerializeToString,
                 response_deserializer=inner__pb2.Status.FromString,
                 )
+        self.GetResultReplica = channel.unary_unary(
+                '/innervoting.eVotingReplica/GetResultReplica',
+                request_serializer=inner__pb2.ElectionName.SerializeToString,
+                response_deserializer=inner__pb2.ElectionResult.FromString,
+                )
+        self.ElectionRecovery = channel.unary_unary(
+                '/innervoting.eVotingReplica/ElectionRecovery',
+                request_serializer=inner__pb2.Status.SerializeToString,
+                response_deserializer=inner__pb2.Elections.FromString,
+                )
 
 
 class eVotingReplicaServicer(object):
@@ -41,6 +51,18 @@ class eVotingReplicaServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetResultReplica(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ElectionRecovery(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_eVotingReplicaServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -53,6 +75,16 @@ def add_eVotingReplicaServicer_to_server(servicer, server):
                     servicer.CastVoteReplica,
                     request_deserializer=inner__pb2.Vote.FromString,
                     response_serializer=inner__pb2.Status.SerializeToString,
+            ),
+            'GetResultReplica': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetResultReplica,
+                    request_deserializer=inner__pb2.ElectionName.FromString,
+                    response_serializer=inner__pb2.ElectionResult.SerializeToString,
+            ),
+            'ElectionRecovery': grpc.unary_unary_rpc_method_handler(
+                    servicer.ElectionRecovery,
+                    request_deserializer=inner__pb2.Status.FromString,
+                    response_serializer=inner__pb2.Elections.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -95,5 +127,39 @@ class eVotingReplica(object):
         return grpc.experimental.unary_unary(request, target, '/innervoting.eVotingReplica/CastVoteReplica',
             inner__pb2.Vote.SerializeToString,
             inner__pb2.Status.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetResultReplica(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/innervoting.eVotingReplica/GetResultReplica',
+            inner__pb2.ElectionName.SerializeToString,
+            inner__pb2.ElectionResult.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ElectionRecovery(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/innervoting.eVotingReplica/ElectionRecovery',
+            inner__pb2.Status.SerializeToString,
+            inner__pb2.Elections.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

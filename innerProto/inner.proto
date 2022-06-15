@@ -7,6 +7,8 @@ import "google/protobuf/timestamp.proto";
 service eVotingReplica {
     rpc ElectionReplica (Election) returns (Status);
     rpc CastVoteReplica (Vote) returns (Status);
+    rpc GetResultReplica(ElectionName) returns (ElectionResult);
+    rpc ElectionRecovery(Status) returns (Elections);
 }
 
 message Voter {
@@ -28,9 +30,18 @@ message Vote {
     required string choice_name = 2;
 }
 
+message ElectionName {
+    required string name = 1;
+}
+
 message VoteCount {
     required string choice_name = 1;
     required int32 count = 2;
+}
+
+message ElectionResult {
+    required int32 status = 1;
+    repeated VoteCount count = 2; 
 }
 
 message ElectionStatus {
@@ -40,5 +51,9 @@ message ElectionStatus {
     repeated VoteCount count = 4;
     repeated string voters = 5;
     required google.protobuf.Timestamp end_date = 6;
+}
+
+message Elections {
+    repeated ElectionStatus elections = 1;
 }
 

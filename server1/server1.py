@@ -156,6 +156,42 @@ class ElectDataLoader():
         result = electioList.choices
         return 0,result
 
+    def Backup(self, code : int):
+        backup = []
+        for election in self.elections:
+            count = []
+            end_time = Timestamp()
+            end_time.FromJsonString(self.elections[election].end_date)
+            choice_list = self.electionList[election].choices
+            for key in choice_list:
+                count.append(inner_pb2.VoteCount(choice_name=key, count=choice_list[key]))
+            backup.append(inner_pb2.ElectionStatus(
+                name = self.electionList[election].name,
+                groups = self.elections[election].groups,
+                choices = self.elections[election].choices,
+                count = count,
+                voters =self.electionList[election].voterList,
+                end_date = end_time
+                ))
+        return backup
+
+    def Recovery(self, backup):
+        for i in range(len(backup)):   
+            choices = {}
+            for k in backup[i].count:
+                choices[k.choice_name] = k.count
+
+            self.electionList[backup[i].name] = ElectionList(
+                name = backup[i].name, 
+                choices = choices ,
+                voterList = list(backup[i].voters))
+
+            self.elections[backup[i].name] = Election(
+                name = backup[i].name, 
+                groups = list(backup[i].groups), 
+                choices = list(backup[i].choices) ,
+                end_date = str(backup[i].end_date.ToJsonString()))
+
 class eVotingReplica(inner_pb2_grpc.eVotingReplicaServicer):
     
     def CreateElect(self, elect_name: str, groups: array, choices: array, end_date: array):
@@ -308,9 +344,52 @@ class eVotingServer(voting_pb2_grpc.eVotingServicer, inner_pb2_grpc.eVotingRepli
             status = 6
         finally:
             return inner_pb2.Status(code=status)
-    
+
+    def ElectionRecovery(self, request, context):  
+        try:
+            elections = request.elections
+            print("Recovery server2")
+            
+        except Exception as e:
+            logging.warning(e)
+            return inner_pb2.Status(code = 0)
+        finally:
+            return inner_pb2.Status(code = 1)
+
+    """ Recovery """
+
+    def ElectionRecovery(self, request, context):  
+        try:
+            logging.info("Restoring Backup Server 2")
+            backup = self.electDB.Backup(request.code)
+            
+        except Exception as e:
+            logging.warning(e)
+            #return inner_pb2.Elections(elections = backup)
+        finally:
+            return inner_pb2.Elections(elections = backup)
+
+    def CheckRecovery(self):
+        with grpc.insecure_channel('localhost:50052') as channel:
+            try:
+                status = 1
+                inner_stub = inner_pb2_grpc.eVotingReplicaStub(channel)
+                backup = inner_stub.ElectionRecovery(inner_pb2.Status(code = 1))
+                #print(backup)
+                self.electDB.Recovery(backup.elections)
+                
+            except grpc.RpcError as e:
+                logging.error(" Server 2 Crash ")
+                status = 0
+            finally:
+                if status:
+                    logging.info(" Server 1 Online ")
+                else:
+                    logging.warning(" Server 1 Recovery Failed ")
+ 
     def serve(self):
         try:
+            self.CheckRecovery()
             self._grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
             inner_pb2_grpc.add_eVotingReplicaServicer_to_server(self, self._grpc_server)
             voting_pb2_grpc.add_eVotingServicer_to_server(self, self._grpc_server)
