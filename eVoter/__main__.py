@@ -16,11 +16,37 @@ from proto import voting_pb2_grpc
 
 voter_name = 'Hello'
 
+"""
+KeyLoader loads private key from file, and derived the signing key and verify key from private key.
+"""
+class KeyLoader():
+    def __init__(self, key_path: str) -> None:
+        sk: bytes = b''
+        if path.exists(key_path):
+            with open(key_path, 'r') as key_file:
+                sk_b64 = key_file.read()
+                sk = base64.b64decode(sk_b64)
+                key_file.close()
+        else:
+            sk = PrivateKey.generate()
+            with open(key_path, 'w') as key_file:
+                sk_b64 = base64.b64encode(bytes(sk)).decode('utf-8')
+                key_file.write(sk_b64)
+                key_file.close()
+        self._private_key = sk
+        self._signing_key = SigningKey(seed=bytes(sk))
+    @property
+    def signing_key(self) -> SigningKey:
+        return self._signing_key
+    @property
+    def verify_key(self) -> VerifyKey:
+        return self._signing_key.verify_key
+
 def test_server1():
-    #key_loader = KeyLoader('voter_key')
-    #logging.debug('verifykey: {}'.format(key_loader.verify_key.encode(encoder=Base64Encoder).decode('utf-8')))
+    key_loader = KeyLoader('voter_key')
+    logging.debug('verifykey: {}'.format(key_loader.verify_key.encode(encoder=Base64Encoder).decode('utf-8')))
     print('\n =========== Test Server1 ===========')
-    with grpc.insecure_channel('localhost:50051') as channel:
+    with grpc.insecure_channel('localhost:50001') as channel:
         try:
             print('\n【Test "CreateElection" function】')
             #Election_stub = inner_pb2_grpc.eVotingReplicaStub(channel)
@@ -129,7 +155,7 @@ def test_server1():
 
 def test_server2():
     print('\n =========== Test Server2 ===========')
-    with grpc.insecure_channel('localhost:50052') as channel:
+    with grpc.insecure_channel('localhost:50002') as channel:
         try:
             print('\n【Test "CreateElection" function】')
             #Election_stub = inner_pb2_grpc.eVotingReplicaStub(channel)

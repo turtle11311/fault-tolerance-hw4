@@ -41,12 +41,12 @@ message Election {
     repeated string groups = 2;
     repeated string choices = 3;
     required google.protobuf.Timestamp end_date = 4;
-    //required AuthToken token = 5;
+    required AuthToken token = 5;
 }
 message Vote {
     required string election_name = 1;
     required string choice_name = 2;
-    //required AuthToken token = 3;
+    required AuthToken token = 3;
 }
 message ElectionName {
     required string name = 1;

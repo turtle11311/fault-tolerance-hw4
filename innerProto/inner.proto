@@ -7,8 +7,8 @@ import "google/protobuf/timestamp.proto";
 service eVotingReplica {
     rpc ElectionReplica (Election) returns (Status);
     rpc CastVoteReplica (Vote) returns (Status);
-    rpc GetResultReplica(ElectionName) returns (ElectionResult);
-    rpc ElectionRecovery(Status) returns (Elections);
+    rpc GetResultReplica (ElectionName) returns (ElectionResult);
+    rpc ElectionRecovery (Status) returns (Elections);
 }
 
 message Voter {
