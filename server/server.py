@@ -187,11 +187,13 @@ class ElectDataLoader():
                 end_date = str(backup[i].end_date.ToJsonString()))
 
 class eVotingReplica(inner_pb2_grpc.eVotingReplicaServicer):
-    
+    def __init__(self, ac_list: List[Tuple[str, grpc.Channel]]):
+        self.active_channels = ac_list
+
     def CreateElect(self, elect_name: str, groups: array, choices: array, end_date: array):
-        with grpc.insecure_channel('localhost:50052') as channel:
+        for chan in self.active_channels:
             try:
-                Replica_stub = inner_pb2_grpc.eVotingReplicaStub(channel)
+                Replica_stub = inner_pb2_grpc.eVotingReplicaStub(chan[1])
                 Replica_status = Replica_stub.ElectionReplica(inner_pb2.Election(
                     name = elect_name,
                     groups = groups,
@@ -206,9 +208,9 @@ class eVotingReplica(inner_pb2_grpc.eVotingReplicaServicer):
                 logging.error(e)
 
     def CastVote(self, voter: Voter, elect_name: str, choice_name: str):
-        with grpc.insecure_channel('localhost:50052') as channel:
+        for chan in self.active_channels:
             try:
-                Replica_stub = inner_pb2_grpc.eVotingReplicaStub(channel)
+                Replica_stub = inner_pb2_grpc.eVotingReplicaStub(chan[1])
                 Replica_status = Replica_stub.CastVoteReplica(inner_pb2.Vote(
                     election_name=elect_name,
                     choice_name =choice_name,
@@ -229,12 +231,12 @@ class eVotingReplica(inner_pb2_grpc.eVotingReplicaServicer):
 class eVotingServer(voting_pb2_grpc.eVotingServicer, inner_pb2_grpc.eVotingReplicaServicer):
     def __init__(self, addr: str, backups: List[str]) -> None:
         self.electDB = ElectDataLoader()
-        self.replica = eVotingReplica()
         self.authenticator = Authenticator("voters.json")
         self.bind_addr = addr
         self.active_channels: List[Tuple[str, grpc.Channel]] = []
         for backup in backups:
             self.active_channels.append(("Server[{}]".format(backup), grpc.insecure_channel(backup)))
+        self.replica = eVotingReplica(self.active_channels)
 
     def __del__(self):
         for chan in self.active_channels:
@@ -290,7 +292,6 @@ class eVotingServer(voting_pb2_grpc.eVotingServicer, inner_pb2_grpc.eVotingRepli
         try:
             token = request.token.value
             voter = self.authenticator.verify_token(token)
-            voter = Voter(name='Hello1',group='student',pub_key=123) # for test
             self.replica.CastVote(voter, request.election_name, request.choice_name)
             self.electDB.UpdateResultList(voter, request.election_name, request.choice_name)
 

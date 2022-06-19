@@ -48,6 +48,17 @@ def test_server1():
     print('\n =========== Test Server1 ===========')
     with grpc.insecure_channel('localhost:50001') as channel:
         try:
+            eVoting_stub = voting_pb2_grpc.eVotingStub(channel)
+            rsp = eVoting_stub.PreAuth(voting_pb2.VoterName(name=voter_name))
+            signature = key_loader.signing_key.sign(rsp.value)
+            rsp = eVoting_stub.Auth(voting_pb2.AuthRequest(
+                name=voting_pb2.VoterName(name=voter_name),
+                response=voting_pb2.Response(value=signature.signature)
+            ))
+            token = rsp.value
+            logging.debug('token[{}]'.format(token))
+            if token != b'':
+                logging.info('authorization successs')
             print('\n【Test "CreateElection" function】')
             #Election_stub = inner_pb2_grpc.eVotingReplicaStub(channel)
             Election_stub = voting_pb2_grpc.eVotingStub(channel)
@@ -58,6 +69,7 @@ def test_server1():
                 groups=['teacher'],
                 choices=['number1','number2'],
                 end_date=end_time,
+                token=voting_pb2.AuthToken(value=token)
                ))
 
             end_time = Timestamp()
@@ -67,6 +79,7 @@ def test_server1():
                 groups=['student'],
                 choices=['number1','number2'],
                 end_date=end_time,
+                token=voting_pb2.AuthToken(value=token)
                 ))
 
             if election_status.code==0:
@@ -78,6 +91,7 @@ def test_server1():
                 groups=[],
                 choices=[],
                 end_date=end_time,
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if election_status.code==2:
                 print('-> Test "Missing groups or choices" success!')
@@ -102,6 +116,7 @@ def test_server1():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election1000',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if castVote_status.code==2:
                 print('-> Test "Invalid election name" success!')
@@ -111,6 +126,7 @@ def test_server1():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election1',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                ))
             if castVote_status.code==3:
                 print('-> Test "wrong group" success!')
@@ -120,6 +136,7 @@ def test_server1():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election2',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if castVote_status.code==4:
                 print('-> Test "already voted" success!')
@@ -155,8 +172,20 @@ def test_server1():
 
 def test_server2():
     print('\n =========== Test Server2 ===========')
+    key_loader = KeyLoader('voter_key')
     with grpc.insecure_channel('localhost:50002') as channel:
         try:
+            eVoting_stub = voting_pb2_grpc.eVotingStub(channel)
+            rsp = eVoting_stub.PreAuth(voting_pb2.VoterName(name=voter_name))
+            signature = key_loader.signing_key.sign(rsp.value)
+            rsp = eVoting_stub.Auth(voting_pb2.AuthRequest(
+                name=voting_pb2.VoterName(name=voter_name),
+                response=voting_pb2.Response(value=signature.signature)
+            ))
+            token = rsp.value
+            logging.debug('token[{}]'.format(token))
+            if token != b'':
+                logging.info('authorization successs')
             print('\n【Test "CreateElection" function】')
             #Election_stub = inner_pb2_grpc.eVotingReplicaStub(channel)
             Election_stub = voting_pb2_grpc.eVotingStub(channel)
@@ -167,6 +196,7 @@ def test_server2():
                 groups=['student'],
                 choices=['number1','number2'],
                 end_date=end_time,
+                token=voting_pb2.AuthToken(value=token)
                 ))
 
             if election_status.code==0:
@@ -178,6 +208,7 @@ def test_server2():
                 groups=[],
                 choices=[],
                 end_date=end_time,
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if election_status.code==2:
                 print('-> Test "Missing groups or choices" success!')
@@ -193,6 +224,7 @@ def test_server2():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election2',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if castVote_status.code==0:
                 print('-> Test "successful vote" success!')
@@ -202,6 +234,7 @@ def test_server2():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election1000',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if castVote_status.code==2:
                 print('-> Test "Invalid election name" success!')
@@ -211,6 +244,7 @@ def test_server2():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election1',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                ))
             if castVote_status.code==3:
                 print('-> Test "wrong group" success!')
@@ -220,6 +254,7 @@ def test_server2():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election2',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if castVote_status.code==4:
                 print('-> Test "already voted" success!')
