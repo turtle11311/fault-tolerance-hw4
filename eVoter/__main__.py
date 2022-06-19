@@ -107,6 +107,7 @@ def test_server1():
             castVote_status = CastVote_stub.CastVote(voting_pb2.Vote(
                 election_name='Election2',
                 choice_name ='number1',
+                token=voting_pb2.AuthToken(value=token)
                 ))
             if castVote_status.code==0:
                 print('-> Test "successful vote" success!')
